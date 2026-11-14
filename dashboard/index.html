@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Token Radar — pre-token protocols ranked by implied launch value</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <div class="brand">
+      <span class="mark" aria-hidden="true">◉</span>
+      <div>
+        <h1>Token Radar</h1>
+        <p class="tag">Every protocol that records no token yet, ranked by what its launch would be worth.</p>
+      </div>
+    </div>
+    <dl class="stats" id="stats"></dl>
+  </div>
+</header>
+
+<main class="wrap">
+  <nav class="tabs" aria-label="Views">
+    <button type="button" class="tab is-active" data-tab="board" id="tab-board">Ranked board</button>
+    <button type="button" class="tab" data-tab="live" id="tab-live">Already trading</button>
+    <button type="button" class="tab" data-tab="method" id="tab-method">How the value is derived</button>
+  </nav>
+
+  <section id="view-board" class="view is-active" aria-label="Ranked board">
+    <div class="toolbar">
+      <label class="field grow">
+        <span class="sr">Search protocols</span>
+        <input id="q" type="search" placeholder="Search a protocol…" autocomplete="off">
+      </label>
+      <label class="field">
+        <span class="sr">Category</span>
+        <select id="category"><option value="all">All categories</option></select>
+      </label>
+      <label class="field">
+        <span class="sr">Chain</span>
+        <select id="chain"><option value="all">All chains</option></select>
+      </label>
+      <label class="check"><input id="watchlist" type="checkbox"> Watchlist only</label>
+      <label class="field">
+        <span class="sr">Sort</span>
+        <select id="sort">
+          <option value="implied">Sort: implied value</option>
+          <option value="tvl">Sort: TVL</option>
+          <option value="growth">Sort: 7-day change</option>
+          <option value="age">Sort: age</option>
+          <option value="readiness">Sort: readiness</option>
+        </select>
+      </label>
+    </div>
+    <p class="count" id="count" aria-live="polite"></p>
+    <div class="tablewrap">
+      <table id="board">
+        <thead>
+          <tr>
+            <th class="num">#</th>
+            <th>Protocol</th>
+            <th>Category</th>
+            <th>Chains</th>
+            <th class="num">TVL</th>
+            <th class="num">7d</th>
+            <th class="num">Age</th>
+            <th class="num">Readiness</th>
+            <th class="num">Implied value</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+    <p class="hint">Click any row for the protocol's detail: the model's own arithmetic, its farm plan, and its facts.</p>
+  </section>
+
+  <section id="view-live" class="view" aria-label="Already trading" hidden>
+    <p class="lede">These protocols already trade. The board shows the market's own value for them — never an implied one — so the ranking is never mixed with live prices.</p>
+    <div class="tablewrap">
+      <table id="live-table">
+        <thead>
+          <tr><th>Protocol</th><th>Category</th><th>Chains</th><th class="num">TVL</th><th class="num">Market cap</th><th class="num">7d</th></tr>
+        </thead>
+        <tbody id="live-rows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="view-method" class="view" aria-label="How the value is derived" hidden>
+    <div class="method" id="method"></div>
+  </section>
+</main>
+
+<aside class="drawer" id="drawer" aria-label="Protocol detail" hidden>
+  <button type="button" class="drawer-close" id="drawer-close" aria-label="Close detail">✕</button>
+  <div id="detail"></div>
+</aside>
+
+<footer class="wrap foot">
+  <p>Snapshot <span id="foot-asof"></span> · source <span id="foot-source"></span> · model <span id="foot-model"></span>. The board ranks protocols that record no token; a protocol is called pre-token only when it records no market cap, no Gecko id and no symbol. Nothing here is investment advice — farm plans are steps to follow, not promises of a reward.</p>
+</footer>
+
+<script src="../data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
