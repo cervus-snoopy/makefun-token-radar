@@ -3,20 +3,30 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Token Radar — pre-token protocols ranked by implied launch value</title>
+<title>Token Radar — fitted size curve, tested out of sample, every farm plan netted</title>
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
+<noscript><p style="padding:20px;font-family:system-ui">Token Radar needs JavaScript: the board is rendered from the snapshot data shipped beside this page.</p></noscript>
 <header class="top">
   <div class="wrap">
     <div class="brand">
       <span class="mark" aria-hidden="true">◉</span>
       <div>
         <h1>Token Radar</h1>
-        <p class="tag">Every protocol that records no token yet, ranked by what its launch would be worth.</p>
+        <p class="tag">Every protocol that records no token yet, priced off a size curve fitted on the tokens that already trade — and tested blind.</p>
       </div>
     </div>
     <dl class="stats" id="stats"></dl>
+  </div>
+  <div class="wrap">
+    <section class="oos" id="oos" aria-label="Out-of-sample validation">
+      <div class="oos-cell"><span class="oos-num" id="oos-loo">—</span><span class="oos-label">LOO geo factor (n=109)</span></div>
+      <div class="oos-cell"><span class="oos-num" id="oos-ts">—</span><span class="oos-label">Time-split geo factor</span></div>
+      <div class="oos-cell"><span class="oos-num" id="oos-boot">—</span><span class="oos-label">Bootstrap top-10 keeps</span></div>
+      <div class="oos-cell"><span class="oos-num" id="oos-base">—</span><span class="oos-label">Median-model LOO (old)</span></div>
+      <div class="oos-cell"><span class="oos-num" id="oos-band">—</span><span class="oos-label">Farm band (10^σ, 65.1%)</span></div>
+    </section>
   </div>
 </header>
 
@@ -24,7 +34,7 @@
   <nav class="tabs" aria-label="Views">
     <button type="button" class="tab is-active" data-tab="board" id="tab-board">Ranked board</button>
     <button type="button" class="tab" data-tab="live" id="tab-live">Already trading</button>
-    <button type="button" class="tab" data-tab="method" id="tab-method">How the value is derived</button>
+    <button type="button" class="tab" data-tab="method" id="tab-method">Model &amp; fit</button>
   </nav>
 
   <section id="view-board" class="view is-active" aria-label="Ranked board">
@@ -41,6 +51,15 @@
         <span class="sr">Chain</span>
         <select id="chain"><option value="all">All chains</option></select>
       </label>
+      <label class="field">
+        <span class="sr">Verdict</span>
+        <select id="verdict">
+          <option value="all">All verdicts</option>
+          <option value="FARM">FARM only</option>
+          <option value="THIN">THIN only</option>
+          <option value="SKIP">SKIP only</option>
+        </select>
+      </label>
       <label class="check"><input id="watchlist" type="checkbox"> Watchlist only</label>
       <label class="field">
         <span class="sr">Sort</span>
@@ -49,6 +68,7 @@
           <option value="tvl">Sort: TVL</option>
           <option value="growth">Sort: 7-day change</option>
           <option value="age">Sort: age</option>
+          <option value="net">Sort: farm net $</option>
           <option value="readiness">Sort: readiness</option>
         </select>
       </label>
@@ -65,14 +85,22 @@
             <th class="num">TVL</th>
             <th class="num">7d</th>
             <th class="num">Age</th>
-            <th class="num">Readiness</th>
+            <th class="num">Multiple</th>
             <th class="num">Implied value</th>
+            <th>Verdict</th>
+            <th class="num">Net $</th>
           </tr>
         </thead>
         <tbody id="rows"></tbody>
       </table>
     </div>
-    <p class="hint">Click any row for the protocol's detail: the model's own arithmetic, its farm plan, and its facts.</p>
+    <p class="hint">Click any row for the protocol's detail: the model's own arithmetic, its netted farm plan, and its facts.</p>
+    <section class="fitblock" id="fitblock" aria-label="Fit scatter">
+      <h2>The fit, plotted</h2>
+      <p class="lede">Every kept comp (log10 TVL against log10 market cap) with the fitted curve — the straight global line at one year of age — the dropped live points hollow, and the board's top 25 candidates on the same axes. Points more than 0.5 dex from the curve are flagged — the curve explains them worst.</p>
+      <div id="fit-scatter"></div>
+      <div id="fit-legend" class="legend"></div>
+    </section>
   </section>
 
   <section id="view-live" class="view" aria-label="Already trading" hidden>
@@ -87,8 +115,20 @@
     </div>
   </section>
 
-  <section id="view-method" class="view" aria-label="How the value is derived" hidden>
+  <section id="view-method" class="view" aria-label="Model and fit" hidden>
     <div class="method" id="method"></div>
+    <h2>Calibration — out of sample, against the baselines</h2>
+    <div class="tablewrap">
+      <table id="cal-table">
+        <thead>
+          <tr><th>Check</th><th class="num">n</th><th class="num">Geo factor</th><th class="num">MdAPE</th><th class="num">Spearman</th><th class="num">Within 2x</th></tr>
+        </thead>
+        <tbody id="cal-rows"></tbody>
+      </table>
+    </div>
+    <h2>The fit, plotted</h2>
+    <p class="lede">Every kept comp with the fitted curve, the dropped live points hollow, and the board's top 25 candidates on the same axes. Flagged points sit more than 0.5 dex from the curve.</p>
+    <div id="fit-scatter-method"></div>
   </section>
 </main>
 
@@ -98,7 +138,7 @@
 </aside>
 
 <footer class="wrap foot">
-  <p>Snapshot <span id="foot-asof"></span> · source <span id="foot-source"></span> · model <span id="foot-model"></span>. The board ranks protocols that record no token; a protocol is called pre-token only when it records no market cap, no Gecko id and no symbol. Nothing here is investment advice — farm plans are steps to follow, not promises of a reward.</p>
+  <p>Snapshot <span id="foot-asof"></span> · source <span id="foot-source"></span> · model <span id="foot-model"></span>. The board ranks protocols that record no token; a protocol is called pre-token only when it records no market cap, no Gecko id and no symbol. Nothing here is investment advice — farm plans are steps to follow, not promises of a reward. Method, validation and counts: dashboard/00-proof.md.</p>
 </footer>
 
 <script src="../data.js"></script>
